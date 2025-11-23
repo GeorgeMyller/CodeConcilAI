@@ -41,3 +41,21 @@ export interface AgentDefinition {
   taskPrompt: string;
   tools?: Tool[]; // Google ADK Tools
 }
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  credits: number; // Added for billing simulation
+  isUnlimited?: boolean; // If true, user is billing directly to their API Key without credit limits
+}
+
+export interface AuditSession {
+  id: string;
+  timestamp: number;
+  tier: 'startup' | 'enterprise';
+  filesCount: number;
+  results: Record<string, AgentResult>;
+  repoUrl?: string;
+}
