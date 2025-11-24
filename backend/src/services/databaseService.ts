@@ -95,7 +95,8 @@ export const DatabaseService = {
     severity?: string
   ) {
     if (!userId) {
-      // Skip logging if no userId provided
+      // Log warning for audit trail gaps
+      console.warn(`Audit event skipped due to missing userId: ${action}`);
       return null;
     }
     return db.auditLog.create({
