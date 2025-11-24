@@ -5,9 +5,11 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create test user
-  const user = await prisma.user.create({
-    data: {
+  // Upsert demo user for idempotency
+  const user = await prisma.user.upsert({
+    where: { email: 'demo@codecouncil.ai' },
+    update: {},
+    create: {
       email: 'demo@codecouncil.ai',
       name: 'Demo User',
       googleId: 'demo-google-id',
@@ -19,25 +21,25 @@ async function main() {
 
   console.log('✓ Created demo user:', user.email);
 
-  // Create sample transactions
-  await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      tier: 'startup',
-      amount: 50,
-      status: 'completed',
-      description: 'First startup audit'
-    }
-  });
-
-  await prisma.transaction.create({
-    data: {
-      userId: user.id,
-      tier: 'enterprise',
-      amount: 150,
-      status: 'completed',
-      description: 'Enterprise deep dive'
-    }
+  // Create sample transactions (allow duplicates across runs)
+  await prisma.transaction.createMany({
+    data: [
+      {
+        userId: user.id,
+        tier: 'startup',
+        amount: 50,
+        status: 'completed',
+        description: 'First startup audit'
+      },
+      {
+        userId: user.id,
+        tier: 'enterprise',
+        amount: 150,
+        status: 'completed',
+        description: 'Enterprise deep dive'
+      }
+    ],
+    skipDuplicates: true
   });
 
   console.log('✓ Created sample transactions');

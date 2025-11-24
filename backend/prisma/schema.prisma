@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // Switched to sqlite for local development fallback (Docker unavailable)
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -100,8 +101,6 @@ model Email {
   sentAt        DateTime?
   
   createdAt     DateTime   @default(now())
-  
-  @@index([status])
   @@index([createdAt])
 }
 
@@ -143,8 +142,7 @@ model RateLimitTracker {
   
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
-  
-  @@index([userId
-  @@index([action])
+
+  @@index([userId])
   @@index([createdAt])
 }
