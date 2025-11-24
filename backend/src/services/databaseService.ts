@@ -86,12 +86,26 @@ export const DatabaseService = {
     });
   },
 
-  async logAuditEvent(action: string, userId?: string, details?: any) {
+  async logAuditEvent(
+    action: string,
+    userId?: string,
+    details?: any,
+    resourceType?: string,
+    resourceId?: string,
+    severity?: string
+  ) {
+    if (!userId) {
+      // Skip logging if no userId provided
+      return null;
+    }
     return db.auditLog.create({
       data: {
         userId,
         action,
         details: JSON.stringify(details || {}),
+        resourceType,
+        resourceId,
+        severity: severity || 'info',
         ipAddress: undefined, // Will be set by middleware
         userAgent: undefined
       }

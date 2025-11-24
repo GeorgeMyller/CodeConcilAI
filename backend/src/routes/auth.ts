@@ -78,7 +78,7 @@ router.post('/google', async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRATION || '7d' }
+      { expiresIn: process.env.JWT_EXPIRATION || '7d' } as jwt.SignOptions
     );
 
     res.json({
@@ -103,14 +103,7 @@ router.post('/google', async (req: Request, res: Response) => {
  * POST /api/auth/refresh
  * Refresh JWT token
  */
-router.post('/refresh', (req: Request, res: Response) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: 'Missing token' });
-  }
-
-  try {async (req: Request, res: Response) => {
+router.post('/refresh', async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -120,19 +113,6 @@ router.post('/refresh', (req: Request, res: Response) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
     const user = await DatabaseService.getUserWithCredits(decoded.id);
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json(user
-  if (!token) {
-    return res.status(401).json({ error: 'Missing token' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-    const user = mockUsers.get(decoded.id);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
