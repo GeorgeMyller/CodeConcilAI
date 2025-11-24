@@ -86,12 +86,27 @@ export const DatabaseService = {
     });
   },
 
-  async logAuditEvent(action: string, userId?: string, details?: any) {
+  async logAuditEvent(
+    action: string,
+    userId?: string,
+    details?: any,
+    resourceType?: string,
+    resourceId?: string,
+    severity?: string
+  ) {
+    if (!userId) {
+      // Log warning for audit trail gaps
+      console.warn(`Audit event skipped due to missing userId: ${action}`);
+      return null;
+    }
     return db.auditLog.create({
       data: {
         userId,
         action,
         details: JSON.stringify(details || {}),
+        resourceType,
+        resourceId,
+        severity: severity || 'info',
         ipAddress: undefined, // Will be set by middleware
         userAgent: undefined
       }

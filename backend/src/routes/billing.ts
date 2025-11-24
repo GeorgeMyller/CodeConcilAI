@@ -45,7 +45,8 @@ router.get('/plans', (req: Request, res: Response) => {
 /**
  * GET /api/billing/usage
  * Get user's current credits and usage
- */async (req: AuthRequest, res: Response) => {
+ */
+router.get('/usage', authMiddleware, async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
 
   try {
@@ -57,7 +58,23 @@ router.get('/plans', (req: Request, res: Response) => {
     const transactions = await DatabaseService.getTransactionHistory(userId!, 100);
     const spent = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-    res.json({async (req: AuthRequest, res: Response) => {
+    res.json({
+      credits: user.credits,
+      spent,
+      isUnlimited: user.isUnlimited,
+      transactions: transactions.slice(0, 10)
+    });
+  } catch (err) {
+    captureException(err as Error, { action: 'get_usage', userId });
+    res.status(500).json({ error: 'Failed to get usage' });
+  }
+});
+
+/**
+ * POST /api/billing/deduct
+ * Deduct credits for an analysis run
+ */
+router.post('/deduct', authMiddleware, async (req: AuthRequest, res: Response) => {
   const { tier } = req.body;
   const userId = req.user?.id;
 
@@ -115,23 +132,6 @@ router.get('/plans', (req: Request, res: Response) => {
     captureException(err as Error, { action: 'process_transaction', userId });
     res.status(500).json({ error: 'Failed to process transaction' });
   }
-  if (usage.credits < cost) {
-    return res.status(402).json({
-      error: 'Insufficient credits',
-      required: cost,
-      available: usage.credits
-    });
-  }
-
-  usage.credits -= cost;
-  usage.spent += cost;
-  billingStore.set(userId, usage);
-
-  res.json({
-    success: true,
-    credits: usage.credits,
-    spent: usage.spent
-  });
 });
 
 /**

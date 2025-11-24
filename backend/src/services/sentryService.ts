@@ -1,22 +1,12 @@
 import * as Sentry from '@sentry/node';
-import { Integrations } from '@sentry/tracing';
 
 export const initSentry = (app: any) => {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
     integrations: [
-      new Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({
-        app: true,
-        request: true,
-        serverName: true,
-        transaction: true,
-        user: ['id', 'email', 'name'],
-        authenticated: true,
-        cachingHeaders: true,
-        ignoredUrls: ['/health', '/api/auth/google/callback']
-      })
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.Express({ app })
     ],
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     beforeSend: (event, hint) => {
