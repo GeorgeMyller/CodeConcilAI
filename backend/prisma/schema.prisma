@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String
+  picture       String?
+  googleId      String     @unique
+  credits       Int        @default(400)
+  isUnlimited   Boolean    @default(false)
+  isAdmin       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  transactions  Transaction[]
+  audits        AuditSession[]
+  stripeCustomer StripeCustomer?
+  auditLogs     AuditLog[]
+}
+
+model Transaction {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tier          String     // "startup" or "enterprise"
+  amount        Int        // Credits deducted
+  stripePaymentId String?
+  
+  status        String     @default("completed") // completed, pending, failed
+  description   String?
+  
+  createdAt     DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AuditSession {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tier          String     // "startup" or "enterprise"
+  filesCount    Int
+  resultsJson   String     // JSON stringified AgentResult[]
+  
+  createdAt     DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model StripeCustomer {
+  id            String     @id @default(cuid())
+  userId        String     @unique
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  stripeCustomerId String   @unique
+  stripeSubscriptionId String?
+  stripePaymentMethodId String?
+  
+  plan          String?    // "startup_monthly", "startup_annual", "enterprise_monthly", "enterprise_annual"
+  status        String?    // "active", "canceled", "past_due", "incomplete"
+  
+  // Subscription details
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+  
+  // Billing info
+  lastInvoiceId      String?
+  nextPaymentAttempt DateTime?
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  @@index([stripeCustomerId])
+  @@index([status])
+}
+
+model Email {
+  id            String     @id @default(cuid())
+  to            String
+  subject       String
+  htmlContent   String
+  
+  sentAt        DateTime?
+  
+  createdAt     DateTime   @default(now())
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action        String     // "subscription_created", "payment_succeeded", "user_signup", etc.
+  details       String     // JSON stringified details
+  resourceType  String?    // "user", "subscription", "payment", "analysis"
+  resourceId    String?
+  severity      String     @default("info") // "info", "warning", "error", "critical"
+  
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([severity])
+  @@index([resourceType])
+  @@index([createdAt])
+}
+
+model RateLimitTracker {
+  id                    String     @id @default(cuid())
+  userId                String     @unique
+  
+  requestsToday         Int        @default(0)
+  requestsThisMonth     Int        @default(0)
+  
+  analysisRunsToday     Int        @default(0)
+  analysisRunsThisMonth Int        @default(0)
+  
+  lastRequestAt         DateTime?
+  lastAnalysisAt        DateTime?
+  
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  
+  @@index([userId
+  @@index([action])
+  @@index([createdAt])
+}

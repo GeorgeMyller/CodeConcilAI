@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { Backend } from '../services/backend';
+import KeyStore from '../services/keyStore';
 
 interface LoginProps {
   onLogin: (user: UserProfile) => void;
@@ -44,8 +45,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               
               setIsLoading(false);
           } else {
-              setError("Key selection not available in this environment.");
-              setIsLoading(false);
+          // Fallback: prompt user for API key and store locally
+          const key = window.prompt('Enter your Google Gemini API Key (kept locally in this browser).');
+          if (!key) {
+          setError("Key selection cancelled.");
+          setIsLoading(false);
+          return;
+          }
+          KeyStore.set(key.trim());
+
+          // Login and upgrade to BYOK mode
+          const user = await Backend.auth.login();
+          const upgradedUser = await Backend.billing.upgradeToUnlimited(user.id);
+          onLogin(upgradedUser);
+          setIsLoading(false);
           }
       } catch (err: any) {
           setError("Key selection cancelled.");

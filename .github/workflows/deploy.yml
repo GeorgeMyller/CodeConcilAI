@@ -1,0 +1,78 @@
+# GitHub Actions CI/CD Pipeline
+
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    
+    - name: Install backend deps
+      working-directory: ./backend
+      run: npm install
+    
+    - name: Type check backend
+      working-directory: ./backend
+      run: npm run typecheck
+    
+    - name: Build backend
+      working-directory: ./backend
+      run: npm run build
+    
+    - name: Install frontend deps
+      working-directory: ./codecouncil-ai
+      run: npm install
+    
+    - name: Type check frontend
+      working-directory: ./codecouncil-ai
+      run: npm run typecheck
+    
+    - name: Build frontend
+      working-directory: ./codecouncil-ai
+      run: npm run build
+
+  deploy-backend:
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Railway (or your platform)
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      run: |
+        # Example: railway deploy --service backend
+        echo "Deploy backend to production"
+
+  deploy-frontend:
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Vercel
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      run: |
+        npm install -g vercel
+        # vercel deploy --prod --token $VERCEL_TOKEN
+        echo "Deploy frontend to Vercel"

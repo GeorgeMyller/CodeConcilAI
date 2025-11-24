@@ -10,6 +10,7 @@ import ExportActions from './components/ExportActions';
 import Login from './components/Login';
 import { runAgentAnalysis } from './services/geminiService';
 import { Backend } from './services/backend';
+import KeyStore from './services/keyStore';
 
 const LANG_CONFIG: Record<OutputLanguage, { label: string, flag: string }> = {
   en: { label: 'English', flag: '🇺🇸' },
@@ -114,7 +115,12 @@ const App: React.FC = () => {
             // Feedback to user
             alert("✅ API Key Connected Successfully!\n\nYou are now using your personal Google Cloud API Key. No platform credits will be consumed.");
         } else {
-            alert("API Key selection is not supported in this environment.");
+        const key = window.prompt('Enter your Google Gemini API Key (kept locally in this browser).');
+        if (!key) return;
+        KeyStore.set(key.trim());
+        const upgradedUser = await Backend.billing.upgradeToUnlimited(user.id);
+        setUser(upgradedUser);
+        alert("✅ API Key saved locally. You are now in BYOK mode.");
         }
     } catch (e) {
         console.error("Key update cancelled or failed", e);

@@ -1,0 +1,376 @@
+# CodeCouncil AI – Enterprise SaaS Platform 🚀
+
+Your on-demand AI engineering workforce. Architecture reviews, security audits, and product analysis—delivered instantly.
+
+**Status**: ✅ Production-Ready with 6 Enterprise Features
+- ✅ Stripe Subscriptions (monthly/annual plans)
+- ✅ Admin Dashboard (user management + analytics)
+- ✅ Per-user Rate Limiting (database-backed)
+- ✅ Audit Logging Dashboard (security events)
+- ✅ Automated Database Backups (PostgreSQL)
+- ✅ Monitoring Stack (Prometheus + Grafana)
+
+## Project Structure
+
+```
+CodeConcilAI/
+├── codecouncil-ai/          # Frontend (React + Vite)
+│   ├── services/
+│   │   ├── apiService.ts    # ← Backend communication
+│   │   ├── geminiService.ts # Gemini AI integration
+│   │   └── githubService.ts # GitHub repo fetching
+│   └── ...
+├── backend/                 # Node.js + Express API
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── auth.ts      # OAuth 2.0 authentication
+│   │   │   ├── billing.ts   # Credits & tier management
+│   │   │   └── gemini.ts    # Gemini API proxy
+│   │   └── middleware/
+│   ├── Dockerfile
+│   └── ...
+├── DEPLOY.md               # Deployment guides
+└── docker-compose.yml      # Local dev stack
+```
+
+## Core Features
+
+✅ **OAuth 2.0 Authentication** – Google login with JWT tokens  
+✅ **Stripe Subscriptions** – Monthly/annual billing with automatic renewal  
+✅ **Credit-Based System** – Tiered plans (Startup/Enterprise) with 400 trial credits  
+✅ **BYOK Support** – Users bring their own Gemini key for unlimited access  
+✅ **AI Agents** – 6 specialized agents for analysis (Architecture, QA, Product, Legal, Writer, AI)  
+✅ **Multi-Language** – Portuguese, English, French  
+✅ **GitHub Integration** – Analyze repositories directly  
+✅ **Export Reports** – Markdown with PDF rendering  
+✅ **Admin Dashboard** – User management, analytics, billing control  
+✅ **Audit Logging** – Compliance-ready security event tracking  
+✅ *Documentation
+
+📖 **Read First**: [QUICKSTART.md](./QUICKSTART.md) – Quick reference guide  
+📚 **Full Setup**: [ENTERPRISE.md](./ENTERPRISE.md) – Complete enterprise features guide  
+🚀 **Deploy**: [PRODUCTION.md](./PRODUCTION.md) – Deployment to production platforms  
+📋 **Implementation**: [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) – Technical details
+
+## Quick Start
+
+### 1. One-Command Setup (Docker)rometheus + Grafana with alerts  
+✅ **TypeScript** – Type-safe throughout (frontend + backend)  
+✅ **Docker** – Containerized for any platform  
+
+## Quick Start
+
+### 1. Clone & Setup
+
+```bash
+git clone <repo>
+cd CodeConcilAI
+
+# Run setup script (handles dependencies, database, Docker)
+chmod +x setup.sh
+./setup.sh
+```
+
+This3script:
+- ✅ Installs dependencies
+- ✅ Sets up PostgreSQL database
+- ✅ Creates .env files
+- ✅ Starts Docker Compose with all services
+
+### 2. Manual Setup (Optional)
+
+### 2. Get Credentials
+
+You'll need:
+- **Google OAuth 2.0:** [Google Cloud Console](https://console.cloud.google.com/)
+  - Create Web app credentials
+  - Add `http://localhost:3000` to authorized origins
+  - Add `http://localhost:5000/api/auth/google/callback` to redirect URIs
+
+- **Gemini API Key:** [Google AI Studio](https://aistudio.google.com/)
+  - Get your API key from settings
+
+### 4. Fill Environment Files
+
+**backend/.env.local:**
+```env
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GEMINI_API_KEY=your-gemini-key
+JWT_SECRET=$(openssl rand -base64 32)
+```
+
+**codecouncil-ai/.env.local:**
+```env
+VITE_API_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your-client-id
+```
+
+### 5. Start Stack
+
+**Option A: Docker Compose (Recommended)**
+
+```bash
+docker-compose up
+```
+
+Then open:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:5000
+- Health: http://localhost:5000/health
+
+**Option B: Manual Dev Servers**
+
+Terminal 1 (Frontend):
+```bash
+cd codecouncil-ai
+npm install
+npm run dev
+```
+
+Terminal 2 (Backend):
+```bash
+cd backend
+npm install
+npm run build
+npm run dev
+```
+
+## Deployment
+
+See **[PRODUCTION.md](./PRODUCTION.md)** for:
+- Railway / Render / Vercel setup
+- AWS / DigitalOcean / Heroku guides
+- Production checklist
+- CI/CD pipelines
+
+**Quick Deploy (Railway):**
+1. Push to GitHub
+2. Connect at railway.app
+3. Set environment variables
+4. Deploy (auto on push)
+
+## API Reference
+
+### Authentication
+- `POST /api/auth/google` – Sign in with Google ID token
+- `GET /api/auth/me` – Get current user
+- `POST /api/auth/refresh` – Refresh JWT
+
+### Subscriptions
+- `GET /api/subscriptions/plans` – List all plans
+- `GET /api/subscriptions/current` – Get user subscription
+- `POST /api/subscriptions/create` – Create subscription
+- `POST /api/subscriptions/cancel` – Cancel subscription
+- `POST /api/subscriptions/change-plan` – Upgrade/downgrade
+
+### Billing & Credits
+- `GET /api/billing/usage` – Check credits
+- `POST /api/billing/process-transaction` – Deduct credits
+- `POST /api/billing/upgrade-to-unlimited` – Enable unlimited
+
+### Admin Dashboard
+- `GET /api/admin/stats` – Dashboard metrics
+- `GET /api/admin/audit-logs` – Audit events (filterable)
+- `GET /api/admin/users/:id` – User details
+- `POST /api/admin/users/:id/suspend` – Suspend user
+- `GET /api/admin/analytics` – Usage analytics
+
+### Rate Limiting
+- `GET /api/rate-limit/usage` – User's rate limits
+
+
+| Plan | Agents | Languages | Monthly Cost | Annual Cost | Monthly Credits |
+|------|--------|-----------|--------------|-------------|-----------------|
+| **Startup** | 3 (Architect, QA, Product) | 1 (English) | $49 | $499 (20% off) | 300 credits |
+| **Enterprise** | 6 (All agents) | 3 (EN/PT/FR) | $149 | $1,499 (20% off) | 1,000 credits |
+| **Trial** | All features | 3 languages | Free | – | 400 credits (one-time) |
+
+**Credit Usage:** 50 credits per Startup audit, 150 credits per Enterprise audit
+
+New users get **400 trial credits** (~8 analyse
+**Example Request:**
+```bash
+curl -X POST http://localhost:5000/api/subscriptions/create \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "planId": "startup_monthly" }'
+```
+
+## Pricing (Configurable)
+
+| Plan | Agents | Languages | Trial Credits | Cost |
+|------|--------|-----------|----------------|------|
+| **Startup Audit** | 3 (Architect, QA, Product) | 1 (English) | 50 per audit | Pay-as-you-go or subscription |
+| **Enterprise Deep Dive** | 6 (All agents) | 3 (EN/PT/FR) | 150 per audit | Premium pricing |
+
+New users get **400 trial credits** (5 Startup or 2 Enterprise audits).
+
+## Architecture┐
+│ Frontend (React 19 + Vite 6)        │
+│ ├─ Google OAuth Login               │
+│ ├─ Subscription Management UI       │
+│ ├─ File/GitHub Repo Input           │
+│ ├─ Agent Dashboard & Reports        │
+│ └─ Admin Panel (admins only)        │
+└──────────────┬──────────────────────┘
+               │ HTTPS / JWT
+               ▼
+┌─────────────────────────────────────┐
+│ Backend (Node.js + Express)         │
+│ ├─ OAuth 2.0 + JWT (7-day)          │
+│ ├─ Stripe Subscriptions             │
+│ ├─ Credit Billing & Rate Limiting   │
+│ ├─ Gemini API Proxy (backend-only)  │
+│ ├─ Admin Dashboard API              │
+│ ├─ Audit Logging                    │
+│ └─ Prometheus Metrics               │
+└──────────────┬──────────────────────┘
+               │
+      ┌────────┼────────┬──────────┬──────────┐
+      │     Features
+
+✅ **Authentication**
+- OAuth 2.0 (passwordless Google login)
+- JWT tokens (7-day expiration)
+- Refresh token rotation
+
+✅ **API Protection**
+- Per-user rate limiting (database-backed)
+- Request validation & sanitization
+- CORS restricted to allowed domains
+- CSP headers in frontend
+
+✅ **Data Security**
+- API keys stored in backend (never in client)
+- Stripe webhook signature verification
+- Encrypted database connections
+- Automated daily backups (30-day retention)
+
+✅ **Compliance**
+- Audit logging (all user actions)
+- Severity-based alerting
+- GDPR-ready (user data export)
+- PII protection in logs
+
+✅ **Monitoring**
+- Real-time error tracking (Sentry)
+- Security event alerts
+- Performance monitoring
+- Automated incident response dashboards  
+**Backups**: Daily automated PostgreSQL backups              ├─► Google Gemini API
+                 ├─► GitHub API
+                 └─► (Future) PostgreSQL + Stripe
+```
+
+## Security Considerations
+
+- ✅ JWT tokens with 7-day expiration
+- ✅ OAuth 2.0 for passwordless auth
+- ✅ API key stored in backend (never exposed to browser)
+- ✅ CORS restricted to frontend domain
+- ✅ CSP headers in frontend
+- ✅ Request validation & error handling
+- ⚠️ Rate limiting (add in production)
+- ⚠️ Database encryption (add in production)
+
+## Production Checklist
+
+✅ **Already Implemented**
+- [x] Stripe subscription billing
+- [x] PostgreSQL database
+- [x] Per-user rate limiting
+- [x] Admin dashboard
+- [x] Audit logging
+- [x] Email notifications (SendGrid)
+- [x] Error tracking (Sentry)
+- [x] Monitoring (Prometheus + Grafana)
+- [x] Automated backups
+- [x] CORS & CSP headers
+- [x] Request validation
+
+**Before Launch**
+- [ ] All env vars in secrets manager
+- [ ] HTTPS/SSL enabled
+- [ ] DNS configured
+- [ ] Admin user created
+- [ ] Stripe products created with price IDs
+- [ ] Backup cron job scheduled
+- [ ] Slack/PagerDuty alerts configured
+- [ ] Privacy policy & Terms published
+- [ ] Support email configured
+- [ ] Monitoring dashboards verified
+
+## Troubleshooting
+
+**"Invalid Google token"**
+- Verify GOOGLE_CLIENT_ID matches in frontend & backend
+- Check OAuth credentials are for Web app, not mobile
+
+**"CORS blocked"**
+- Ensure FRONTEND_URL in backend .env matches your frontend domain
+- Check CORS middleware in backend/src/index.ts
+
+**"Gemini API error"**
+- Confirm GEMINI_API_KEY is valid
+- Check API quota hasn't been exceeded
+
+**"Rate limit exceeded"**
+- Check user's tier with `GET /api/rate-limit/usage`
+- Admin can reset: `UPDATE "RateLimitTracker" SET "requestsToday" = 0`
+
+**"Stripe webhook not processing"**
+- Verify webhook endpoint registered in Stripe Dashboard
+- Check webhook signature in logs
+- Test with: `curl -X POST http://localhost:5000/api/billing/stripe/webhook`
+
+**"Backup/restore failed"**
+- Run: `gunzip -t /var/backups/codecouncil-ai/*.sql.gz`
+- Check database permissions
+- Verify PostgreSQL is running
+
+**Need help?** Check the full troubleshooting section in [ENTERPRISE.md](./ENTERPRISE.md)
+
+## Contributing
+
+Issues & PRs welcome! Follow these steps:
+1. Create feature branch: `git checkout -b feature/my-feature`
+2. Commit: `git commit -m "Add feature"`
+3. Push: `git push origin feature/my-feature`
+4. Open Pull Request
+
+## Getting Started
+
+1. **Quick Reference**: [QUICKSTART.md](./QUICKSTART.md)
+2. **Full Setup**: [ENTERPRISE.md](./ENTERPRISE.md) 
+3. **Deployment**: [PRODUCTION.md](./PRODUCTION.md)
+4. **Implementation Details**: [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)
+
+## Verify Installation
+
+```bash
+chmod +x verify.sh
+./verify.sh
+```
+
+This will confirm all 6 enterprise features are properly implemented.
+
+---
+
+**Ready to launch?** Follow [QUICKSTART.md](./QUICKSTART.md) then [ENTERPRISE.md](./ENTERPRISE.md)
+
+**Questions?** Open an issue or check the troubleshooting section above.
+
+**Status**: ✅ Production-Ready for SaaS Launch
+
+- 📧 Email: support@codecouncil.ai
+- 💬 Discord: [Join community](https://discord.gg/codecouncil)
+- 📚 Docs: Full API docs at /docs (coming soon)
+
+---
+
+**Ready to launch?** Head to [DEPLOY.md](./DEPLOY.md) for production deployment guides.
+
+**Have questions?** Check the [FAQ](./FAQ.md) or open an issue.
+
+Good luck! 🚀

@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { AgentDefinition, FileContent, OutputLanguage } from '../types';
+import KeyStore from './keyStore';
 
 /**
  * Prepares the prompt context from uploaded files.
@@ -41,8 +42,18 @@ export const runAgentAnalysis = async (
   // Inject language constraint into system instruction
   const languageInstruction = `\n\nCRITICAL INSTRUCTION: The user has requested the output in ${LANGUAGE_MAP[language]}. You MUST write the entire response in ${LANGUAGE_MAP[language]}. Do not use any other language for the main text. Technical terms can remain in English if standard, but the explanation must be in ${LANGUAGE_MAP[language]}.`;
 
+  // Prefer BYOK stored at runtime; fallback to Vite env for local dev
+  const apiKey = KeyStore.get() || import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  if (!apiKey) {
+    return {
+      text: 'Error: No API key found. Add your Gemini API key via the "Skip trial" flow or set VITE_GEMINI_API_KEY in .env.local for local development. Never ship a hardcoded key to production.',
+      citations: []
+    };
+  }
+
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

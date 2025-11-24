@@ -1,0 +1,137 @@
+{
+  "dashboard": {
+    "title": "CodeCouncil AI Backend Monitoring",
+    "description": "Real-time monitoring for CodeCouncil AI backend",
+    "tags": ["codecouncil", "api", "backend"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "refId": "A",
+            "legendFormat": "{{method}} {{path}}"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "refId": "A"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "alert": {
+          "name": "Error Rate Alert",
+          "conditions": [
+            {
+              "evaluator": { "params": [0.05], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "type": "query"
+            }
+          ],
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Error Rate Alert",
+          "noDataState": "no_data",
+          "notificationUids": ["default"]
+        }
+      },
+      {
+        "id": 3,
+        "title": "API Response Time (P95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, http_request_duration_seconds_bucket)",
+            "refId": "A",
+            "legendFormat": "{{path}}"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+      },
+      {
+        "id": 4,
+        "title": "Database Connections",
+        "targets": [
+          {
+            "expr": "db_connection_pool_used",
+            "refId": "A",
+            "legendFormat": "Used"
+          },
+          {
+            "expr": "db_connection_pool_available",
+            "refId": "B",
+            "legendFormat": "Available"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
+      },
+      {
+        "id": 5,
+        "title": "Subscription Events",
+        "targets": [
+          {
+            "expr": "rate(subscription_created_total[1h])",
+            "refId": "A",
+            "legendFormat": "Created"
+          },
+          {
+            "expr": "rate(subscription_canceled_total[1h])",
+            "refId": "B",
+            "legendFormat": "Canceled"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 }
+      },
+      {
+        "id": 6,
+        "title": "Payment Success Rate",
+        "targets": [
+          {
+            "expr": "rate(stripe_payment_succeeded_total[1h]) / (rate(stripe_payment_succeeded_total[1h]) + rate(stripe_payment_failed_total[1h]))",
+            "refId": "A"
+          }
+        ],
+        "type": "gauge",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 }
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes / 1024 / 1024",
+            "refId": "A",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 }
+      },
+      {
+        "id": 8,
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[5m])",
+            "refId": "A"
+          }
+        ],
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 }
+      }
+    ]
+  }
+}
