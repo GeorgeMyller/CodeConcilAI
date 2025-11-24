@@ -48,70 +48,54 @@ router.get('/plans', (req: Request, res: Response) => {
  */
 router.get('/usage', authMiddleware, async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   try {
-    const user = await DatabaseService.getUserWithCredits(userId!);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const user = await DatabaseService.getUserWithCredits(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const transactions = await DatabaseService.getTransactionHistory(userId!, 100);
-    const spent = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const transactions = await DatabaseService.getTransactionHistory(userId, 100);
+    const spent = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
     res.json({
       credits: user.credits,
-      spent,
       isUnlimited: user.isUnlimited,
-      transactions: transactions.slice(0, 10)
+      spent,
+      transactions
     });
   } catch (err) {
     captureException(err as Error, { action: 'get_usage', userId });
-    res.status(500).json({ error: 'Failed to get usage' });
+    res.status(500).json({ error: 'Failed to fetch usage' });
   }
 });
 
 /**
- * POST /api/billing/deduct
- * Deduct credits for an analysis run
+ * POST /api/billing/process-transaction
+ * Deduct credits for a tier and record transaction
  */
-router.post('/deduct', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const { tier } = req.body;
+router.post('/process-transaction', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { tier } = req.body as { tier?: string };
   const userId = req.user?.id;
 
-  if (!userId || !tier) {
-    return res.status(400).json({ error: 'Missing userId or tier' });
-  }
+  if (!userId || !tier) return res.status(400).json({ error: 'Missing userId or tier' });
 
-  const cost = COSTS[tier as keyof typeof COSTS];
-  if (!cost) {
-    return res.status(400).json({ error: 'Invalid tier' });
-  }
+  const cost = (COSTS as any)[tier];
+  if (!cost) return res.status(400).json({ error: 'Invalid tier' });
 
   try {
     const user = await DatabaseService.getUserWithCredits(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (user.isUnlimited) {
-      // BYOK mode - no credits deducted
-      return res.json({ success: true, credits: 0, isUnlimited: true });
+      return res.json({ success: true, credits: user.credits, isUnlimited: true });
     }
 
     if (user.credits < cost) {
-      return res.status(402).json({
-        error: 'Insufficient credits',
-        required: cost,
-        available: user.credits
-      });
+      return res.status(402).json({ error: 'Insufficient credits', required: cost, available: user.credits });
     }
 
-    // Deduct credits
-    await DatabaseService.updateUser(userId, {
-      credits: user.credits - cost
-    });
+    await DatabaseService.updateUser(userId, { credits: user.credits - cost });
 
-    // Record transaction
     const transaction = await DatabaseService.createTransaction({
       userId,
       tier,
@@ -120,14 +104,9 @@ router.post('/deduct', authMiddleware, async (req: AuthRequest, res: Response) =
       description: `${tier} audit`
     });
 
-    // Log event
     await DatabaseService.logAuditEvent('analysis_run', userId, { tier, cost });
 
-    res.json({
-      success: true,
-      credits: user.credits - cost,
-      transactionId: transaction.id
-    });
+    res.json({ success: true, credits: user.credits - cost, transactionId: transaction.id });
   } catch (err) {
     captureException(err as Error, { action: 'process_transaction', userId });
     res.status(500).json({ error: 'Failed to process transaction' });

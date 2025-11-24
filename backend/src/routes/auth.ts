@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import { sign, verify, Secret } from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { DatabaseService } from '../services/databaseService.js';
 import { StripeService } from '../services/stripeService.js';
@@ -75,12 +75,12 @@ router.post('/google', async (req: Request, res: Response) => {
     }
 
     // Generate JWT
-    // Type assertion needed due to TypeScript's strict overload resolution
-    const token = jwt.sign(
+    const jwtSecret: Secret = process.env.JWT_SECRET || 'secret';
+    const token = (sign as any)(
       { id: user.id, email: user.email, name: user.name },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRATION || '7d' } as jwt.SignOptions
-    );
+      jwtSecret,
+      { expiresIn: process.env.JWT_EXPIRATION || '7d' }
+    ) as string;
 
     res.json({
       token,
@@ -105,29 +105,46 @@ router.post('/google', async (req: Request, res: Response) => {
  * Refresh JWT token
  */
 router.post('/refresh', async (req: Request, res: Response) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const { token } = req.body;
 
-  if (!token) {
-    return res.status(401).json({ error: 'Missing token' });
-  }
+  if (!token) return res.status(400).json({ error: 'Missing token' });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const decoded = verify(token, process.env.JWT_SECRET || 'secret') as any;
     const user = await DatabaseService.getUserWithCredits(decoded.id);
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      picture: user.picture,
-      credits: user.credits,
-      isUnlimited: user.isUnlimited,
-      createdAt: user.createdAt
-    });
+    // Issue a new token
+    const newToken = (sign as any)(
+      { id: user.id, email: user.email, name: user.name },
+      (process.env.JWT_SECRET || 'secret') as Secret,
+      { expiresIn: process.env.JWT_EXPIRATION || '7d' }
+    ) as string;
+
+    res.json({ token: newToken });
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+/**
+ * GET /api/auth/me
+ * Return current user profile
+ */
+router.get('/me', async (req: Request, res: Response) => {
+  const auth = req.headers.authorization;
+  const token = auth?.split(' ')[1];
+
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  try {
+    const decoded = verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const user = await DatabaseService.getUserWithCredits(decoded.id);
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.json(user);
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
   }

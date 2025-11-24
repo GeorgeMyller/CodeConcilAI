@@ -1,32 +1,32 @@
 import * as Sentry from '@sentry/node';
 
 export const initSentry = (app: any) => {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express({ app })
-    ],
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    beforeSend: (event, hint) => {
-      // Filter out noisy errors
-      if (event.exception) {
-        const error = hint.originalException;
-        if (error instanceof Error) {
-          // Ignore specific error types
-          if (error.message.includes('ECONNREFUSED')) {
-            return null;
-          }
-        }
-      }
-      return event;
-    }
-  });
+  if (!process.env.SENTRY_DSN) return Sentry;
 
-  // Capture request/response
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
+  try {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      beforeSend: (event, hint) => {
+        if (event.exception) {
+          const error = hint?.originalException as Error | undefined;
+          if (error && error.message.includes('ECONNREFUSED')) return null;
+        }
+        return event;
+      }
+    });
+
+    // Attach handlers if available
+    if (Sentry.Handlers && Sentry.Handlers.requestHandler) {
+      app.use(Sentry.Handlers.requestHandler());
+    }
+    if (Sentry.Handlers && Sentry.Handlers.tracingHandler) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
+  } catch (err) {
+    console.warn('Sentry initialization skipped:', err);
+  }
 
   return Sentry;
 };
