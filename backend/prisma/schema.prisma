@@ -6,8 +6,7 @@ generator client {
 }
 
 datasource db {
-  // Switched to sqlite for local development fallback (Docker unavailable)
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -22,6 +21,7 @@ model User {
   isAdmin       Boolean    @default(false)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+  geminiApiKey  String?
   
   // Relations
   transactions  Transaction[]

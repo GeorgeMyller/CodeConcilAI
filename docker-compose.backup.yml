@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backup:
+    image: postgres:15-alpine
+    container_name: codecouncil_backup
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/codecouncil?schema=public
+      - CRON_SCHEDULE=0 2 * * *
+    volumes:
+      - ./backend/scripts/backup-db.sh:/usr/local/bin/backup-db.sh
+      - ./backups:/var/backups/codecouncil-ai
+    command: >
+      /bin/sh -c "
+        apk add --no-cache bash &&
+        chmod +x /usr/local/bin/backup-db.sh &&
+        echo \"\$CRON_SCHEDULE /usr/local/bin/backup-db.sh production >> /var/log/cron.log 2>&1\" > /etc/crontabs/root &&
+        crond -f -l 8
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

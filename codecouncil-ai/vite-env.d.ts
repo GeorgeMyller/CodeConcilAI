@@ -13,4 +13,13 @@ interface Window {
   aistudio?: {
     openSelectKey: () => Promise<void>;
   };
+  google?: {
+    accounts: {
+      id: {
+        initialize: (config: any) => void;
+        renderButton: (parent: HTMLElement, options: any) => void;
+        prompt: () => void;
+      };
+    };
+  };
 }

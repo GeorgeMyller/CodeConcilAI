@@ -15,6 +15,7 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import adminRoutes from './routes/admin.js';
 import rateLimitRoutes from './routes/rateLimit.js';
 import metricsRoutes from './routes/metrics.js';
+import agentRoutes from './routes/agents.js';
 import { metricsMiddleware } from './middleware/metricsMiddleware.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -67,6 +68,7 @@ app.use('/api/rate-limit', rateLimitRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/metrics', metricsRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/agents', agentRoutes);
 
 // 404
 app.use((req: Request, res: Response) => {

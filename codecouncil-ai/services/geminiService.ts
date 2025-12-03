@@ -8,14 +8,14 @@ import KeyStore from './keyStore';
  */
 const prepareContext = (files: FileContent[]): string => {
   let context = "CODEBASE CONTEXT:\n\n";
-  
+
   if (files.length === 0) return "No files provided.";
 
   files.forEach(file => {
     context += `--- FILE: ${file.name} ---\n`;
     // Truncate large files to avoid hitting token limits aggressively if needed, 
     // though Gemini 2.5 has a large window.
-    context += file.content.substring(0, 50000); 
+    context += file.content.substring(0, 50000);
     context += `\n--- END FILE: ${file.name} ---\n\n`;
   });
 
@@ -54,7 +54,7 @@ export const runAgentAnalysis = async (
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: fullPrompt,
@@ -70,23 +70,68 @@ export const runAgentAnalysis = async (
 
     // Extract citations/grounding metadata if available
     const citations: string[] = [];
-    
+
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     if (groundingChunks) {
-        groundingChunks.forEach((chunk: any) => {
-            if (chunk.web?.uri) {
-                citations.push(chunk.web.uri);
-            }
-        });
+      groundingChunks.forEach((chunk: any) => {
+        if (chunk.web?.uri) {
+          citations.push(chunk.web.uri);
+        }
+      });
     }
 
     return { text, citations };
-
   } catch (error: any) {
     console.error(`Error running agent ${agent.role}:`, error);
-    return { 
-        text: `Error: ${error.message || "Unknown error occurred during analysis."}`,
-        citations: []
+    return {
+      text: `Error: ${error.message || "Unknown error occurred during analysis."}`,
+      citations: []
     };
   }
+};
+
+/**
+ * Starts a backend agent session.
+ */
+export const startBackendAgent = async (
+  files: FileContent[],
+  agent: AgentDefinition,
+  token: string
+): Promise<string> => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/agents/start`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      goal: agent.taskPrompt,
+      role: agent.role,
+      files: files.map(f => ({ name: f.name, content: f.content }))
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to start agent session');
+  }
+
+  const data = await response.json();
+  return data.sessionId;
+};
+
+/**
+ * Polls agent status.
+ */
+export const getAgentStatus = async (sessionId: string, token: string): Promise<any> => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/agents/${sessionId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch agent status');
+  }
+
+  return response.json();
 };

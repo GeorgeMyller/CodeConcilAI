@@ -49,6 +49,7 @@ export interface UserProfile {
   avatar: string;
   credits: number; // Added for billing simulation
   isUnlimited?: boolean; // If true, user is billing directly to their API Key without credit limits
+  hasApiKey?: boolean; // True if user has configured their own Gemini API Key
 }
 
 export interface AuditSession {
@@ -58,4 +59,23 @@ export interface AuditSession {
   filesCount: number;
   results: Record<string, AgentResult>;
   repoUrl?: string;
+}
+
+export interface AgentStep {
+  thought: string;
+  action?: string;
+  actionInput?: any;
+  observation?: string;
+  timestamp: Date;
+}
+
+export interface AgentSession {
+  id: string;
+  goal: string;
+  role: string;
+  status: 'IDLE' | 'RUNNING' | 'WAITING_FOR_ACTION' | 'COMPLETED' | 'ERROR';
+  steps: AgentStep[];
+  result?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

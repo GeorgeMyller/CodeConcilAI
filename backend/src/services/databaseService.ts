@@ -25,6 +25,13 @@ export const DatabaseService = {
     });
   },
 
+  async updateUserApiKey(id: string, apiKey: string) {
+    return db.user.update({
+      where: { id },
+      data: { geminiApiKey: apiKey }
+    });
+  },
+
   async getUserWithCredits(id: string) {
     return db.user.findUnique({
       where: { id },
@@ -35,7 +42,8 @@ export const DatabaseService = {
         picture: true,
         credits: true,
         isUnlimited: true,
-        createdAt: true
+        createdAt: true,
+        geminiApiKey: true
       }
     });
   },

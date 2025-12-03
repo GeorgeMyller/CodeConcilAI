@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: codecouncil_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install Dependencies
+      run: |
+        cd backend
+        npm install
+        cd ../codecouncil-ai
+        npm install
+
+    - name: Run Database Migrations
+      run: |
+        cd backend
+        npx prisma migrate dev --name init_ci
+      env:
+        DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/codecouncil_test?schema=public
+
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        npm test
+      env:
+        DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/codecouncil_test?schema=public
+
+    - name: Build Backend
+      run: |
+        cd backend
+        npm run build
+
+    - name: Build Frontend
+      run: |
+        cd codecouncil-ai
+        npm run build

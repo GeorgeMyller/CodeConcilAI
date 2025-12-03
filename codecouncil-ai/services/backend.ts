@@ -19,40 +19,70 @@ const DB_KEYS = {
 const INITIAL_CREDITS = 400;
 
 export const Backend = {
-  
+
   /**
    * AUTHENTICATION MODULE
    */
   auth: {
     login: async (): Promise<UserProfile> => {
-      // Simulate network latency
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const token = localStorage.getItem('token');
+      if (!token) return null;
 
-      // Check if user exists in "DB"
-      const storedUser = localStorage.getItem(DB_KEYS.USER);
-      
-      if (storedUser) {
-        return JSON.parse(storedUser);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch user');
+
+        const user = await response.json();
+        return {
+          ...user,
+          avatar: user.picture || 'https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'
+        };
+      } catch (e) {
+        console.error('Login check failed', e);
+        return null;
       }
-
-      // Create new user if not exists
-      const newUser: UserProfile = {
-        id: 'usr_' + Math.random().toString(36).substr(2, 9),
-        name: 'Engineering Lead',
-        email: 'lead@codecouncil.ai',
-        avatar: 'https://ui-avatars.com/api/?name=Engineering+Lead&background=6366f1&color=fff',
-        credits: INITIAL_CREDITS,
-        isUnlimited: false // STRICT DEFAULT: Must be false to enforce quota
-      };
-
-      localStorage.setItem(DB_KEYS.USER, JSON.stringify(newUser));
-      return newUser;
     },
 
     logout: async () => {
-      // We don't clear the data to simulate "cloud persistence", 
-      // but in a real app we might clear the token.
+      localStorage.removeItem('token');
       return true;
+    },
+
+    saveApiKey: async (apiKey: string): Promise<void> => {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No token');
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/api-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ apiKey })
+      });
+
+      if (!response.ok) throw new Error('Failed to save API key');
+    },
+
+    googleLogin: async (idToken: string): Promise<UserProfile> => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) throw new Error('Google login failed');
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+
+      return {
+        ...data.user,
+        avatar: data.user.picture || 'https://ui-avatars.com/api/?name=User&background=6366f1&color=fff'
+      };
     },
 
     updateCredits: (credits: number) => {
@@ -80,7 +110,7 @@ export const Backend = {
 
       const history = Backend.db.getHistorySync();
       const updatedHistory = [newRecord, ...history];
-      
+
       localStorage.setItem(DB_KEYS.HISTORY, JSON.stringify(updatedHistory));
       return newRecord;
     },
@@ -111,12 +141,12 @@ export const Backend = {
       if (!stored) throw new Error("User not found");
 
       const user = JSON.parse(stored);
-      
+
       // If user is in BYOK (Bring Your Own Key) Unlimited mode, they don't consume platform credits
       if (user.isUnlimited) {
         return true;
       }
-      
+
       if (user.credits < cost) {
         return false;
       }
@@ -127,16 +157,16 @@ export const Backend = {
     },
 
     upgradeToUnlimited: async (userId: string): Promise<UserProfile> => {
-        const stored = localStorage.getItem(DB_KEYS.USER);
-        if (!stored) throw new Error("User not found");
-  
-        const user = JSON.parse(stored);
-        user.isUnlimited = true;
-        // Visual sugar: set credits to 0 as they are no longer relevant
-        user.credits = 0; 
-        
-        localStorage.setItem(DB_KEYS.USER, JSON.stringify(user));
-        return user;
+      const stored = localStorage.getItem(DB_KEYS.USER);
+      if (!stored) throw new Error("User not found");
+
+      const user = JSON.parse(stored);
+      user.isUnlimited = true;
+      // Visual sugar: set credits to 0 as they are no longer relevant
+      user.credits = 0;
+
+      localStorage.setItem(DB_KEYS.USER, JSON.stringify(user));
+      return user;
     }
   }
 };

@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
-import { sign, verify, Secret } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+const { sign, verify } = jwt;
+import type { Secret } from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { DatabaseService } from '../services/databaseService.js';
 import { StripeService } from '../services/stripeService.js';
@@ -101,6 +103,29 @@ router.post('/google', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/auth/api-key
+ * Update user's Gemini API Key
+ */
+router.post('/api-key', async (req: Request, res: Response) => {
+  const auth = req.headers.authorization;
+  const token = auth?.split(' ')[1];
+  const { apiKey } = req.body;
+
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+  if (!apiKey) return res.status(400).json({ error: 'Missing API key' });
+
+  try {
+    const decoded = verify(token, process.env.JWT_SECRET || 'secret') as any;
+
+    await DatabaseService.updateUserApiKey(decoded.id, apiKey);
+
+    res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to update API key' });
+  }
+});
+
+/**
  * POST /api/auth/refresh
  * Refresh JWT token
  */
@@ -144,7 +169,12 @@ router.get('/me', async (req: Request, res: Response) => {
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    res.json(user);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.json({
+      ...user,
+      hasApiKey: !!user.geminiApiKey // Return boolean flag only
+    });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
   }
