@@ -39,7 +39,11 @@ services:
       - app-network
 
   frontend:
-    build: ./codecouncil-ai
+    build:
+      context: ./codecouncil-ai
+      args:
+        VITE_API_URL: http://localhost:5001
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     ports:
       - "3000:80"
     depends_on:
